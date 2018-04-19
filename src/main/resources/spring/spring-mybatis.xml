@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+
+	<!-- 属性配置文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+
+	<!-- 数据源配置 -->
+	<!-- <bean id="dataSource" name="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"> 
+		<property name="driverClass" value="${jdbc.driver}" /> <property name="jdbcUrl" 
+		value="${jdbc.url}" /> <property name="user" value="${jdbc.username}" /> 
+		<property name="password" value="${jdbc.password}" /> <property name="maxPoolSize" 
+		value="${jdbc.maxPoolSize}" /> <property name="minPoolSize" value="${jdbc.minPoolSize}" 
+		/> <property name="initialPoolSize" value="${jdbc.initialPoolSize}" /> <property 
+		name="maxIdleTime" value="${jdbc.maxIdleTime}" /> <property name="acquireIncrement" 
+		value="${jdbc.acquireIncrement}" /> <property name="maxStatements" value="${jdbc.maxStatements}" 
+		/> <property name="idleConnectionTestPeriod" value="${jdbc.idleConnectionTestPeriod}" 
+		/> </bean> -->
+	<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="readOnly" value="false" />
+		<property name="idleTimeout" value="1000000" />
+		<property name="maxLifetime" value="25200000" />
+		<property name="connectionTimeout" value="3000000" />
+		<property name="maximumPoolSize" value="10" />
+		<property name="connectionTestQuery" value="select 1" />
+		<property name="dataSourceProperties">
+			<props>
+				<prop key="cachePrepStmts">true</prop>
+				<prop key="prepStmtCacheSize">250</prop>
+				<prop key="prepStmtCacheSqlLimit">2048</prop>
+				<prop key="useServerPrepStmts">true</prop>
+				<prop key="useLocalSessionState">true</prop>
+				<prop key="useLocalTransactionState">true</prop>
+				<prop key="rewriteBatchedStatements">true</prop>
+				<prop key="cacheResultSetMetadata">true</prop>
+				<prop key="cacheServerConfiguration">true</prop>
+				<prop key="elideSetAutoCommits">true</prop>
+				<prop key="maintainTimeStats">false</prop>
+			</props>
+		</property>
+	</bean>
+
+	<!-- spring、mybatis整合开始 -->
+
+	<!-- 配置Session工厂 -->
+	<bean id="sqlSessionFactory" class="com.baomidou.mybatisplus.spring.MybatisSqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 加载其它mybatis配置文件 -->
+		<property name="plugins">
+			<array>
+				<!-- 分页插件配置 -->
+				<bean id="paginationInterceptor" class="com.baomidou.mybatisplus.plugins.PaginationInterceptor">
+					<property name="dialectType" value="mysql"/>
+				</bean>
+			</array>
+		</property>
+		<property name="mapperLocations" value="classpath:mapper/*Mapper.xml" />
+		<property name="configLocation" value="classpath:mybatis/mybatis-conf.xml"></property>
+	</bean>
+
+	<!-- 配置注入器 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<!-- dao层接口包扫描目录 -->
+		<property name="basePackage" value="com.mds.manager.dao" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+	</bean>
+	<!-- spring、mybatis整合结束 -->
+
+	<!-- 支持注解事务 -->
+	<tx:annotation-driven transaction-manager="transactionManager" />
+	<!-- 添加事务配置 -->
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+</beans>
